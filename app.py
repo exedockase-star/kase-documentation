@@ -14,12 +14,30 @@ FOLDER_ID = '1IYKRqFhhhArogNeuRe3H-bUT3TQhGk7a'
 SCOPES = ['https://www.googleapis.com/auth/drive']
 SERVICE_ACCOUNT_FILE = 'credentials.json'
 
-# Decode Base64 credentials from Render Environment Variable securely
-encoded_creds = os.environ.get('GOOGLE_CREDENTIALS_JSON')
-if encoded_creds:
-    decoded_bytes = base64.b64decode(encoded_creds.encode('utf-8'))
-    with open(SERVICE_ACCOUNT_FILE, 'wb') as f:
-        f.write(decoded_bytes)
+# Smart flexible loader: automatically handles Base64, raw JSON, or escaped newlines
+google_creds_input = os.environ.get('GOOGLE_CREDENTIALS_JSON', '').strip()
+if google_creds_input:
+    try:
+        # First, try to decode as Base64
+        decoded_bytes = base64.b64decode(google_creds_input.encode('utf-8'), validate=True)
+        creds_text = decoded_bytes.decode('utf-8')
+    except Exception:
+        # If it's not valid Base64, assume it's raw text/JSON
+        creds_text = google_creds_input
+
+    try:
+        creds_dict = json.loads(creds_text)
+    except json.JSONDecodeError:
+        # Fallback to fix escaped newlines if raw text had formatting quirks
+        fixed_text = creds_text.replace('\\\\n', '\\n')
+        creds_dict = json.loads(fixed_text)
+
+    # Ensure proper newline formatting in the private key
+    if 'private_key' in creds_dict:
+        creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n')
+
+    with open(SERVICE_ACCOUNT_FILE, 'w', encoding='utf-8') as f:
+        json.dump(creds_dict, f, ensure_ascii=False)
 
 creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 drive_service = build('drive', 'v3', credentials=creds)
