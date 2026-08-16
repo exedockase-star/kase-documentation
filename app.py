@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
-FOLDER_ID = '1IYKRqFhhhArogNeuRe3H-bUT3TQhGk7a' 
+FOLDER_ID = '19S09p8BGF-eCyRFWY75Chl1mM7w61gec' 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 SERVICE_ACCOUNT_FILE = 'credentials.json'
 
