@@ -1,33 +1,35 @@
 import os
-import fitz  # PyMuPDF for automatic PDF cover extraction
+import json
 from flask import Flask, render_template, request, redirect, url_for
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+from google.oauth2 import service_account
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB total batch limit
+# --- CONFIGURATION ---
+# PASTE YOUR GOOGLE DRIVE FOLDER ID HERE
+FOLDER_ID = 'PASTE_YOUR_FOLDER_ID_HERE' 
+SCOPES = ['https://www.googleapis.com/auth/drive']
+SERVICE_ACCOUNT_FILE = 'credentials.json'
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Safely build credentials file from Render Environment Variable
+google_creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+if google_creds_json:
+    with open(SERVICE_ACCOUNT_FILE, 'w') as f:
+        f.write(google_creds_json)
 
-# Clean slate: Starts empty so you can manually populate every report and event
+creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+drive_service = build('drive', 'v3', credentials=creds)
+
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
+
 entries = []
 
 @app.route('/')
 def index():
-    category_filter = request.args.get('category', 'all')
-    search_query = request.args.get('search', '').lower()
-    
-    filtered_entries = entries
-    if category_filter != 'all':
-        filtered_entries = [e for e in filtered_entries if e['category'] == category_filter]
-        
-    if search_query:
-        filtered_entries = [e for e in filtered_entries if search_query in e['title'].lower() or search_query in e['summary'].lower()]
-        
-    return render_template('index.html', entries=filtered_entries, current_category=category_filter)
+    return render_template('index.html', entries=entries)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -37,57 +39,32 @@ def upload_file():
     summary = request.form.get('summary')
     
     uploaded_files = request.files.getlist('files')
-    filename = ''
-    cover_filename = ''
-    gallery_images = []
+    file_id = ''
+    gallery = []
 
-    if uploaded_files:
-        for index, file in enumerate(uploaded_files):
-            if file and file.filename:
-                safe_name = secure_filename(file.filename)
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], safe_name)
-                file.save(file_path)
-                
-                ext = safe_name.rsplit('.', 1)[1].lower() if '.' in safe_name else ''
-                
-                # If first file is a PDF, auto-extract page 1 as cover
-                if index == 0 and ext == 'pdf':
-                    filename = safe_name
-                    try:
-                        doc = fitz.open(file_path)
-                        if len(doc) > 0:
-                            page = doc.load_page(0)
-                            pix = page.get_pixmap(dpi=150)
-                            cover_filename = "cover_" + safe_name.rsplit('.', 1)[0] + ".png"
-                            cover_path = os.path.join(app.config['UPLOAD_FOLDER'], cover_filename)
-                            pix.save(cover_path)
-                        doc.close()
-                    except Exception as e:
-                        print(f"PDF cover extraction error: {e}")
-                
-                # If it's an image, collect it for the gallery and use the first as cover
-                elif ext in ['jpg', 'jpeg', 'png', 'webp']:
-                    gallery_images.append(safe_name)
-                    if not filename:
-                        filename = safe_name
-                    if not cover_filename:
-                        cover_filename = safe_name
+    for file in uploaded_files:
+        if file and file.filename:
+            safe_name = secure_filename(file.filename)
+            file.save(safe_name)
+            
+            # Upload to Google Drive
+            file_metadata = {'name': safe_name, 'parents': [FOLDER_ID]}
+            media = MediaFileUpload(safe_name, resumable=True)
+            drive_file = drive_service.files().create(body=file_metadata, media_body=media).execute()
+            
+            drive_id = drive_file.get('id')
+            if not file_id: file_id = drive_id
+            gallery.append(drive_id)
+            
+            os.remove(safe_name)
 
     badge = "bg-indigo-50 text-indigo-700"
-    if category == "Event Report":
-        badge = "bg-emerald-50 text-emerald-700"
-    elif category == "Field Activity":
-        badge = "bg-amber-50 text-amber-700"
+    if category == "Event Report": badge = "bg-emerald-50 text-emerald-700"
+    elif category == "Field Activity": badge = "bg-amber-50 text-amber-700"
 
     entries.insert(0, {
-        'title': title,
-        'category': category,
-        'date': date,
-        'summary': summary,
-        'filename': filename,
-        'cover_filename': cover_filename,
-        'gallery': gallery_images,
-        'badge': badge
+        'title': title, 'category': category, 'date': date,
+        'summary': summary, 'file_id': file_id, 'gallery': gallery, 'badge': badge
     })
     
     return redirect(url_for('index'))
