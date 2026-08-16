@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KASE Chronicle & Documentation Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="bg-gradient-to-tr from-indigo-700 to-indigo-600 text-white font-black p-3 rounded-xl shadow-md text-lg tracking-wider">KASE</div>
+                <div>
+                    <h1 class="font-extrabold text-xl text-slate-900 tracking-tight">Documentation Division</h1>
+                    <p class="text-xs text-slate-500 font-medium">Kerala Academy for Skills Excellence (KASE)</p>
+                </div>
+            </div>
+            <div>
+                <button onclick="openUploadModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 text-sm font-semibold">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Upload New Report / Edition
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Banner -->
+    <section class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white py-14 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+            <div class="md:col-span-2">
+                <span class="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Centralized Memory & Storage Hub</span>
+                <h2 class="text-3xl sm:text-4xl font-black tracking-tight mt-3 leading-tight">KASE Chronicle & <span class="text-indigo-400">Activity Portal</span></h2>
+                <p class="text-slate-300 mt-3 text-sm sm:text-base leading-relaxed">Secure digital archive supporting large PDF newsletters, photo packages, and event reports up to 50MB.</p>
+            </div>
+            <div class="bg-slate-800/80 backdrop-blur-md p-6 rounded-2xl border border-slate-700 shadow-xl flex flex-col justify-center">
+                <span class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Storage Capacity</span>
+                <p class="text-2xl font-black text-white">50 MB <span class="text-sm font-normal text-slate-400">max per file</span></p>
+                <p class="text-xs text-emerald-400 mt-2 flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Server Database Active</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
+        
+        <!-- Search & Filter Controls -->
+        <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-10 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            
+            <!-- Category Filter Tabs -->
+            <div class="flex flex-wrap gap-2">
+                <a href="/" class="px-4 py-2 text-sm font-semibold rounded-xl transition {{ 'bg-indigo-600 text-white shadow-xs' if current_category == 'all' else 'bg-slate-100 hover:bg-slate-200 text-slate-700' }}">All Entries</a>
+                <a href="/?category=Newsletter" class="px-4 py-2 text-sm font-semibold rounded-xl transition {{ 'bg-indigo-600 text-white shadow-xs' if current_category == 'Newsletter' else 'bg-slate-100 hover:bg-slate-200 text-slate-700' }}">Newsletters</a>
+                <a href="/?category=Event Report" class="px-4 py-2 text-sm font-semibold rounded-xl transition {{ 'bg-indigo-600 text-white shadow-xs' if current_category == 'Event Report' else 'bg-slate-100 hover:bg-slate-200 text-slate-700' }}">Event Reports</a>
+                <a href="/?category=Field Activity" class="px-4 py-2 text-sm font-semibold rounded-xl transition {{ 'bg-indigo-600 text-white shadow-xs' if current_category == 'Field Activity' else 'bg-slate-100 hover:bg-slate-200 text-slate-700' }}">Field Activities</a>
+            </div>
+
+            <!-- Search Bar -->
+            <form action="/" method="GET" class="relative min-w-[280px]">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" name="search" placeholder="Search archive titles or summaries..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition">
+            </form>
+        </div>
+
+        <!-- Card Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for entry in entries %}
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-xl transition duration-300 group">
+                <div>
+                    <div class="h-48 bg-slate-100 border-b border-slate-100 flex items-center justify-center text-slate-400 font-semibold text-xs relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent flex items-end p-4">
+                            <span class="text-white text-xs font-bold backdrop-blur-md bg-white/20 px-2.5 py-1 rounded-md border border-white/10">{{ entry.filename if entry.filename else 'Archived Record' }}</span>
+                        </div>
+                        <i class="fa-regular fa-folder-open text-3xl text-slate-300"></i>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-black uppercase tracking-wider {{ entry.badge }} px-3 py-1 rounded-full">{{ entry.category }}</span>
+                            <span class="text-xs font-medium text-slate-400">{{ entry.date }}</span>
+                        </div>
+                        <h4 class="font-bold text-xl text-slate-900 group-hover:text-indigo-600 transition">{{ entry.title }}</h4>
+                        <p class="text-sm text-slate-600 mt-2.5 leading-relaxed">{{ entry.summary }}</p>
+                    </div>
+                </div>
+                <div class="px-6 pb-6 pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Saved on Server</span>
+                    {% if entry.filename %}
+                    <a href="{{ url_for('static', filename='uploads/' + entry.filename) }}" target="_blank" class="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-sm font-bold transition">
+                        <span>View File</span> <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                    </a>
+                    {% else %}
+                    <span class="text-xs text-slate-400 font-medium">Ready</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl border border-slate-100 relative">
+            <button onclick="closeUploadModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-700 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="text-2xl font-black text-slate-900 mb-2">Upload New Entry</h3>
+            <p class="text-xs text-slate-500 mb-6">Add past reports, photos, or monthly newsletters up to 50MB.</p>
+            
+            <form action="/upload" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Title / Event Name</label>
+                    <input type="text" name="title" required placeholder="e.g., KASE Chronicle - April 2026" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Category</label>
+                        <select name="category" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                            <option value="Newsletter">Newsletter Edition</option>
+                            <option value="Event Report">Event Report</option>
+                            <option value="Field Activity">Field Activity</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Date / Month</label>
+                        <input type="text" name="date" required placeholder="e.g., April 2026" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Summary / Highlights</label>
+                    <textarea name="summary" rows="3" required placeholder="Short summary for review..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Upload File (Max 50MB)</label>
+                    <input type="file" name="file" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                </div>
+
+                <div class="pt-4 flex items-center justify-end space-x-3">
+                    <button type="button" onclick="closeUploadModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl">Cancel</button>
+                    <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md">Publish to Server</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-white border-t border-slate-800 py-10 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div>
+                <p class="font-bold text-lg">Kerala Academy for Skills Excellence (KASE)</p>
+                <p class="text-xs text-slate-400 mt-1">Documentation Division • State Skill Development Mission, Thiruvananthapuram</p>
+            </div>
+            <p class="text-xs text-slate-500">© 2026 KASE Documentation Portal. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        function openUploadModal() { document.getElementById('uploadModal').classList.remove('hidden'); }
+        function closeUploadModal() { document.getElementById('uploadModal').classList.add('hidden'); }
+    </script>
+</body>
+</html>
