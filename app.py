@@ -1,6 +1,5 @@
 import os
 import json
-import base64
 from flask import Flask, render_template, request, redirect, url_for
 from werkzeug.utils import secure_filename
 
@@ -13,67 +12,50 @@ SERVICE_ACCOUNT_FILE = 'credentials.json'
 
 drive_service = None
 
-# 100% clean, verified base64-encoded credentials string
-EMBEDDED_CREDS_B64 = (
-    "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3Rfa2V5X2lk"
-    "IjogIzdjOWYxOWQ5YmIwMmZlMzIwODRlMzgwZmFhYTNjM2MxOGY1NWM2NmEiLAog"
-    "ICJwcml2YXRlX2tleSI6ICItLS0tLkJFR0lOIFBSSVZBVEUgS0VZLS0tLS0KTUlJ"
-    "RXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0JLZ3dnZ1pqQWdFQUFvSUJBUUNs"
-    "K25hUVFHdGJMc21ZCmxmQjZFV28zRGpjVlI1MXVxbkcvcTFadU9jWWgxL2JvMG1V"
-    "T3lsdEowNmFCZFRETGgxelhQZXp4ZXhLb3ZFNGIKZ29RMDdnT2VHc3NQWlUwRnlY"
-    "N0lTVzk4QXpOdkN3TGVMam82VGcrK2FCWVlyRGU1ZHM4RWtUazFNdCtDLzNNVwpS"
-    "UxMR2dUZjRNOUhjMlUrTm1oMzlBREI5V2N5K3VFSEdlcmdEcmNNSHZBRlpqZjMv"
-    "TitmTm1Rd21mbEpwbjVpCmlZdmk5NGFySEUxZGJOenZJalJ2MkM4azFpOEtwWjNq"
-    "RG00ZnlZRWlndHVWbTI4SDJERU12UHlBVUpwdFFKV1IKdVNzYWN3SXFSbjExY0k3"
-    "UjQzMkorQ3U2NlpWR2RFL25wV1JtYTFIZFhNcC9UQ0VsVkZERVBTRFdPVFBVcDJk"
-    "dXo5S2NNSFZneEFnTUJBQUVDZ2dFQUJnUTRXa1lGaGppQjFRTEJaUEZlNmVnOVlh"
-    "dDNCdGtObHNLdmx6OEhvamd0CmduYkc5RVJzVHZhcHUxbGJ4NUxzYi81MkNYSmFS"
-    "S3pQd1lKSGg5SWxaaXluTmZPSWVWaGFuTWpCcm11QXlLcUwKNC9FbHlmR0VzMVNi"
-    "VVhGanN6aTk3QmJXRGFvK2pTVjBudWIrdHE5R3BEVm1XaHNTSFZGVVU5M1B6YmdY"
-    "TWJNMApzbHRCU2RJQ1lxQksrcHo1WTJsbmswb2pmcHZRWVVNeWVOdi85ckd5YUJt"
-    "TTZscnJwbGRzdEc3a0wvQmtFb3dDCkt2Rm5PRVY0V0FVTy8zUk5QWGNlQUlRV3do"
-    "TGtPSXRSK0kzejdNNUcxYlVjNldaNFBmYmlKVjRySkVSQ3pJOEwKMDN6NDd2YkVi"
-    "QnlLVnhoeThuditFdTArL1VOYnpEYnNxRUdwNXFYZ2dRS0JnUURXc3gva2RqBjJ4"
-    "QUR2bkZURwpKenZETzM4YnY4TytmdkR3WUEwa1gzaWp0N0hiSDg3aGxSSTNjczBS"
-    "TkZHSUY5Y0UrNGpDK3BUVkFxcVB0QzFMCk8rVkFIVWM1amludFErWkkyU1NBVWZa"
-    "ZDI4cVd5Z1VMY0t4RFFvSTFia1FzUlplQWRQTGwyRlVySnRERVhFSnEKWjNML3Vs"
-    "STFpb2xxbVN3YTVJYkhTUzhmY1FLQmdRREY2QThoY0tOMWJ3cElrUTExRDRIUTdC"
-    "TlBhTUlYUVJ6b3ZqTnlKUVhJUGJ0dlZtSm5mS1BlSlF3WEdQam5vcllKYzE5dmdj"
-    "Q05xT3J2VjBnUnhNM2tqK0NsRWJ4eXBWUHpCOHR5dXoKQlJEeGFZK2hoR2tBV1pS"
-    "SytxZ2puTlZCWlhjbVA0Z0RmalNHQ0g5aVRxa3ZCaHI3cjRJaTB3VHhBb0dBWWlx"
-    "bAp0clNrb0ErZ1RqYUZNbGVxMFBNT1o5cUlSRWZNOHV3QTVFQlFtbEg4bHM1OGpD"
-    "eWtjaDdNTExTVTRub2lGeGd1Cm1wYVVaWUhJbHIyNjU4Y1UwS0ozTndCTm9OZk41"
-    "N0M5UGllVmRIaHJSUmN4SlI3dXEyUWZLaE54N1FyZUcvWUMKM0NMWjk4V3BnN2Zp"
-    "dFk2SnVqWkMvMWVCVWtXV2d5V25mY2FlclFFQ2dZRUF1NnV0UjVjRVp3ZTVXd1RK"
-    "Nkl4dAoxdzcwVUFzRTZrbmtrMEFnNjJPbXBidlN5TEhVM1d1QUE5MVgxR2dvU3ox"
-    "L09ZUnhyYVl5NkpGeXVsNHVTdHhZCmg2bHRLSGxEMHlyUmo3YVgvZ3BJODJlbGgr"
-    "VXZLSGNCekNGZmp6SmJlK3drMlF1Q1hVUEd1K0tIR1p6N2x1L2kKUDFoaHNwYUtE"
-    "Qk9BTElZVTl1cTNjaHc9Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0KIiwKICAi"
-    "Y2xpZW50X2VtYWlsIjogImthc2UtdXBsb2FkZXJAcnVnZ2VkLXNpbG8tNTA1NzA5"
-    "LWkzLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAiY2xpZW50X2lkIjogIjEw"
-    "MjQ5ODI1MzI5MDY0MDQ1MTAzMCIsCiAgImF1dGhfdXJpIjogImh0dHBzOi8vYWNj"
-    "b3VudHMuZ29vZ2xlLmNvbS9vL29hdXRoMi9hdXRoIiwKICAidG9rZW5fdXJpIjog"
-    "Imh0dHBzOi8vb2F1dGgyLmdvb2dsZWFwaXMuY29tL3Rva2VuIiwKICAiYXV0aF9w"
-    "cm92aWRlcl94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMu"
-    "Y29tL29hdXRoMi92MS9jZXJ0cyIsCiAgImNsaWVudF94NTA5X2NlcnRfdXJsIjog"
-    "Imh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL3JvYm90L3YxL21ldGFkYXRhL3g1"
-    "MDkva2FzZS11cGxvYWRlciU0MHJ1Z2dlZC1zaWxvLTUwNTcwOS1pMy5pYW0uZ3Nl"
-    "cnZpY2VhY2NvdW50LmNvbSIsCiAgInVuaXZlcnNlX2RvbWFpbiI6ICJnb29nbGVh"
-    "cGlzLmNvbSIKfQ=="
-)
+# Direct credentials dictionary — completely eliminates base64/decoding errors
+creds_dict = {
+    "type": "service_account",
+    "project_id": "rugged-silo-505709-i3",
+    "private_key_id": "7c9f19d9bb02fe32084e380faaa3c3c18f55c66a",
+    "private_key": (
+        "-----BEGIN PRIVATE KEY-----\n"
+        "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCl+naQQGtbLsmY\n"
+        "lfB6EWo3DjcVR51uqnG/q1ZuOcYh1/bo0mUOyltJ06aBdTDLh1zXPezxexKovE4b\n"
+        "goQ07gOeGssPZU0FyX7ISW98AzNvCwLeLjo6Tg++aBYYrDe5ds8EkTk1Mt+C/3MW\n"
+        "R1LLGgTf4M9Hc2U+Nmh39ADB9Wcy+uEHGergDrcMHvAFZjf3/N+fNmQwmflJpn5i\n"
+        "iYvi94arHE1dbNzvIjRv2C8k1i8KpZ3jDm4fyYEigtuVm28H2DEMvPyAUJptQJWR\n"
+        "uSsacwIqRn11cI7R432J+Cu66ZVGdE/npWRma1HdXMp/TCElVFDEPSDWOTPUp2du\n"
+        "9KcMHVgxAgMBAAECggEABgQ4WkYFhjiB1QLBZPFe6eg9Yat3BtkNlsKvlz8Hojgt\n"
+        "gnbG9ERsTvapu1lbx5Lsb/52CXJaRKzPwYJHh9IlZiynNfOIeVhanMjBrmuAyKqL\n"
+        "4/ElyfGEs1SbUXFjszi97BbWDao+jSV0nub+tq9GpDVmWhsSHVFUU93PzbgXMbM0\n"
+        "sltBSdICYqBK+pz5Y2lnk0ojfpvQYUMyeNv/9rGyaBmM6lrrpldstG7kL/BkEowC\n"
+        "KvFnOEV4WAUO/3RNPXceAIQWwhLkOItR+I3z7M5G1bUc6WZ4PfbiJV4rJERCzI8L\n"
+        "03z47vbEbByKVxhy8nv+Eu0+/UNbzDbsqEGp5qXggQKBgQDWsx/kdjB2xADvnFTG\n"
+        "JzvDO38bv8O+fvDwYA0kX3ijt7HbH87hlRI3cs0RNFGIF9cE+4jC+pTVAqqPtC1L\n"
+        "O+VAHUc5jintQ+ZI2SSAUfZd28qWygULcKxDQoI1bkQsRZeAdPLl2FUrJtDEXEJq\n"
+        "Z3L/ulI1iolqmSwa5IbHSS8fcQKBgQDF6A8hcKN1bwpIkQ11D4HQ7B5Ta1I8q16N\n"
+        "gVZX5PLCYADTQ0deSedbeEjrHxpbqDbRzrdJ2F12BBR6pcQBJk7/5ludBf1tEGbP\n"
+        "029X9E95imQuRoO0JhTvK2VCE297bEpEg2iQsVRos/ASaDB9YSvyxRrJnotephLn\n"
+        "31LnQfbkwQKBgHdu87naiYE37bFdTMdiQduMOFxOY+yPnyaIuCbYuTqR0G2uFx7k\n"
+        "F1sjELKWYRiM8n8CEgUs8ihAsHL6bwvgCNqOrvV0gRxM3kj+ClEbxypVPzB8tyuz\n"
+        "BRDxaY+hhGkAWZQK+qgjnNVBZXcmP4gDfjSGCH9iTqkvBhr7r4Ii0wTxAoGAYiql\n"
+        "trSkoA+gTjaFMleq0PMOZ9qIREfM8uwA5EBQmlH8ls58jCykch7MLLSU4noiFxgu\n"
+        "mpaUZYHIlr2658cU0KJ3NwBNoNfN57C9PieVdHhNERcxJR7uq2QfKhNx7QreG/YC\n"
+        "3CLZ98Wpg7fitY6JujZC/1eBUkWWgyWnfcaerQECgYEAu6utR5cEZwe5WwTJ6Ixt\n"
+        "1w70UAsE6knkk0Ag62OmpbvSyLHU3WuAA91X1GgoSz1/OYRxraYy6JFyul4uStxY\n"
+        "h6ltKHlD0yrRj7aX/gpI82elh+UvKHcBzCFfjzJbe+wk2QuCXUPGu+KHGZz7lu/i\n"
+        "P1hhspaKDBOALIYU9uq3chw=\n-----END PRIVATE KEY-----\n"
+    ),
+    "client_email": "kase-uploader@rugged-silo-505709-i3.iam.gserviceaccount.com",
+    "client_id": "102498253290640451030",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/kase-uploader%40rugged-silo-505709-i3.iam.gserviceaccount.com",
+    "universe_domain": "googleapis.com"
+}
 
 try:
-    cleaned_b64 = "".join(EMBEDDED_CREDS_B64.split())
-    padding_needed = len(cleaned_b64) % 4
-    if padding_needed:
-        cleaned_b64 += "=" * (4 - padding_needed)
-        
-    decoded_bytes = base64.b64decode(cleaned_b64.encode('utf-8'))
-    creds_dict = json.loads(decoded_bytes.decode('utf-8'))
-    
-    if 'private_key' in creds_dict:
-        creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n')
-
     with open(SERVICE_ACCOUNT_FILE, 'w', encoding='utf-8') as f:
         json.dump(creds_dict, f, ensure_ascii=False)
 
