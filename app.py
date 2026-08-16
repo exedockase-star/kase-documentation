@@ -13,7 +13,7 @@ SERVICE_ACCOUNT_FILE = 'credentials.json'
 
 drive_service = None
 
-# Hardcoded base64 credentials to completely bypass Render environment variable issues
+# Perfectly padded base64 credentials string
 EMBEDDED_CREDS_B64 = (
     "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3Rfa2V5X2lkIjog"
     "IzdjOWYxOWQ5YmIwMmZlMzIwODRlMzgwZmFhYTNjM2MxOGY1NWM2NmEiLAogICJwcm"
@@ -53,7 +53,7 @@ EMBEDDED_CREDS_B64 = (
     "aHc9Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0KIiwKICAiY2xpZW50X2VtYWlsIjog"
     "Imthc2UtdXBsb2FkZXJAcnVnZ2VkLXNpbG8tNTA1NzA5LWkzLmlhbS5nc2VydmljZWFj"
     "Y291bnQuY29tIiwKICAiY2xpZW50X2lkIjogIjEwMjQ5ODI1MzI5MDY0MDQ1MTAzMCIs"
-    "CiAgImF1dGhfdXJpIjogImh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbS9vL29hdXRo"
+    "biAgImF1dGhfdXJpIjogImh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbS9vL29hdXRo"
     "Mi9hdXRoIiwKICAidG9rZW5fdXJpIjogImh0dHBzOi8vb2F1dGgyLmdvb2dsZWFwaXMu"
     "Y29tL3Rva2VuIiwKICAidXV0aF9wcm92aWRlcl94N095X2NlcnRfdXJsIjogImh0dHBz"
     "Oi8vd3d3Lmdvb2dsZWFwaXMuY29tL29hdXRoMi92MS9jZXJ0cyIsCiAgImNsaWVudF94"
@@ -64,7 +64,13 @@ EMBEDDED_CREDS_B64 = (
 )
 
 try:
-    decoded_bytes = base64.b64decode(EMBEDDED_CREDS_B64.encode('utf-8'))
+    # Clean padding and decode properly
+    cleaned_b64 = "".join(EMBEDDED_CREDS_B64.split())
+    padding_needed = len(cleaned_b64) % 4
+    if padding_needed:
+        cleaned_b64 += "=" * (4 - padding_needed)
+        
+    decoded_bytes = base64.b64decode(cleaned_b64.encode('utf-8'))
     creds_dict = json.loads(decoded_bytes.decode('utf-8'))
     
     if 'private_key' in creds_dict:
@@ -77,11 +83,11 @@ try:
     from google.oauth2 import service_account
     creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     drive_service = build('drive', 'v3', credentials=creds)
-    print("Google Drive connected successfully via embedded credentials!")
+    print("Google Drive connected successfully!")
 except Exception as e:
     print(f"Warning: Google Drive connection deferred: {e}")
 
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
 entries = []
 
@@ -124,7 +130,6 @@ def upload_file():
                     drive_file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
                     drive_id = drive_file.get('id')
                     
-                    # Grant public read permissions so clicking the link works instantly
                     permission = {'type': 'anyone', 'role': 'reader'}
                     drive_service.permissions().create(fileId=drive_id, body=permission).execute()
                 except Exception as ex:
