@@ -14,7 +14,9 @@ SERVICE_ACCOUNT_FILE = 'credentials.json'
 drive_service = None
 
 try:
-    google_creds_input = os.environ.get('GOOGLE_CREDENTIALS_JSON', '').strip()
+    google_creds_input = os.environ.get('GOOGLE_CREDENTIALS_JSON', '')
+    google_creds_input = "".join(google_creds_input.split())
+    
     if google_creds_input:
         try:
             decoded_bytes = base64.b64decode(google_creds_input.encode('utf-8'), validate=True)
@@ -81,8 +83,12 @@ def upload_file():
                     from googleapiclient.http import MediaFileUpload
                     file_metadata = {'name': safe_name, 'parents': [FOLDER_ID]}
                     media = MediaFileUpload(safe_name, resumable=True)
-                    drive_file = drive_service.files().create(body=file_metadata, media_body=media).execute()
+                    drive_file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
                     drive_id = drive_file.get('id')
+                    
+                    # Automatically grant anyone with the link permission to view the file
+                    permission = {'type': 'anyone', 'role': 'reader'}
+                    drive_service.permissions().create(fileId=drive_id, body=permission).execute()
                 except Exception as ex:
                     print(f"Drive upload error: {ex}")
             
