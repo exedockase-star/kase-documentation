@@ -21,7 +21,7 @@
             </div>
             <div>
                 <button onclick="openUploadModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 text-sm font-semibold">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> Upload New Report / Edition
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Upload New Report / Photos
                 </button>
             </div>
         </div>
@@ -33,12 +33,12 @@
             <div class="md:col-span-2">
                 <span class="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Centralized Memory & Storage Hub</span>
                 <h2 class="text-3xl sm:text-4xl font-black tracking-tight mt-3 leading-tight">KASE Chronicle & <span class="text-indigo-400">Activity Portal</span></h2>
-                <p class="text-slate-300 mt-3 text-sm sm:text-base leading-relaxed">Secure digital archive supporting large PDF newsletters, photo packages, and event reports up to 50MB.</p>
+                <p class="text-slate-300 mt-3 text-sm sm:text-base leading-relaxed">Secure digital archive supporting multi-photo batch uploads, automated PDF covers, and reports up to 50MB.</p>
             </div>
             <div class="bg-slate-800/80 backdrop-blur-md p-6 rounded-2xl border border-slate-700 shadow-xl flex flex-col justify-center">
                 <span class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Storage Capacity</span>
-                <p class="text-2xl font-black text-white">50 MB <span class="text-sm font-normal text-slate-400">max per file</span></p>
-                <p class="text-xs text-emerald-400 mt-2 flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Server Database Active</p>
+                <p class="text-2xl font-black text-white">50 MB <span class="text-sm font-normal text-slate-400">max per batch</span></p>
+                <p class="text-xs text-emerald-400 mt-2 flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Smart Multi-File Upload Active</p>
             </div>
         </div>
     </section>
@@ -48,8 +48,6 @@
         
         <!-- Search & Filter Controls -->
         <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-10 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-            
-            <!-- Category Filter Tabs -->
             <div class="flex flex-wrap gap-2">
                 <a href="/" class="px-4 py-2 text-sm font-semibold rounded-xl transition {{ 'bg-indigo-600 text-white shadow-xs' if current_category == 'all' else 'bg-slate-100 hover:bg-slate-200 text-slate-700' }}">All Entries</a>
                 <a href="/?category=Newsletter" class="px-4 py-2 text-sm font-semibold rounded-xl transition {{ 'bg-indigo-600 text-white shadow-xs' if current_category == 'Newsletter' else 'bg-slate-100 hover:bg-slate-200 text-slate-700' }}">Newsletters</a>
@@ -57,63 +55,83 @@
                 <a href="/?category=Field Activity" class="px-4 py-2 text-sm font-semibold rounded-xl transition {{ 'bg-indigo-600 text-white shadow-xs' if current_category == 'Field Activity' else 'bg-slate-100 hover:bg-slate-200 text-slate-700' }}">Field Activities</a>
             </div>
 
-            <!-- Search Bar -->
             <form action="/" method="GET" class="relative min-w-[280px]">
                 <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </span>
-                <input type="text" name="search" placeholder="Search archive titles or summaries..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition">
+                <input type="text" name="search" placeholder="Search archive entries..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition">
             </form>
         </div>
 
         <!-- Card Grid -->
+        {% if entries|length == 0 %}
+        <div class="bg-white rounded-3xl border border-slate-200 p-16 text-center shadow-xs">
+            <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fa-solid fa-folder-open"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800">No entries added yet</h3>
+            <p class="text-slate-500 text-sm mt-1 max-w-md mx-auto">Your archive is clean. Click the upload button above to start adding your past editions and event reports manually.</p>
+        </div>
+        {% else %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for entry in entries %}
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-xl transition duration-300 group">
                 <div>
-                    <div class="h-48 bg-slate-100 border-b border-slate-100 flex items-center justify-center text-slate-400 font-semibold text-xs relative overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent flex items-end p-4">
-                            <span class="text-white text-xs font-bold backdrop-blur-md bg-white/20 px-2.5 py-1 rounded-md border border-white/10">{{ entry.filename if entry.filename else 'Archived Record' }}</span>
+                    <!-- Smart Cover Display with Photo Counter -->
+                    <div class="h-48 bg-slate-100 border-b border-slate-100 relative overflow-hidden flex items-center justify-center">
+                        {% if entry.cover_filename %}
+                        <img src="{{ url_for('static', filename='uploads/' + entry.cover_filename) }}" alt="Cover" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        {% else %}
+                        <div class="absolute inset-0 bg-gradient-to-tr from-slate-900 to-indigo-950 flex flex-col items-center justify-center text-slate-400 p-4">
+                            <i class="fa-regular fa-image text-3xl text-indigo-400 mb-2"></i>
+                            <span class="text-xs text-slate-300 font-medium">Record Archive</span>
                         </div>
-                        <i class="fa-regular fa-folder-open text-3xl text-slate-300"></i>
+                        {% endif %}
+                        <div class="absolute top-3 right-3 flex gap-2">
+                            {% if entry.gallery|length > 1 %}
+                            <span class="text-xs font-bold bg-slate-900/80 text-white px-2.5 py-1 rounded-full backdrop-blur-md shadow-md"><i class="fa-regular fa-images mr-1"></i> {{ entry.gallery|length }} Photos</span>
+                            {% endif %}
+                            <span class="text-xs font-black uppercase tracking-wider {{ entry.badge }} px-3 py-1 rounded-full shadow-md">{{ entry.category }}</span>
+                        </div>
                     </div>
+                    
                     <div class="p-6">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-black uppercase tracking-wider {{ entry.badge }} px-3 py-1 rounded-full">{{ entry.category }}</span>
-                            <span class="text-xs font-medium text-slate-400">{{ entry.date }}</span>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-400"><i class="fa-regular fa-calendar mr-1"></i> {{ entry.date }}</span>
                         </div>
                         <h4 class="font-bold text-xl text-slate-900 group-hover:text-indigo-600 transition">{{ entry.title }}</h4>
                         <p class="text-sm text-slate-600 mt-2.5 leading-relaxed">{{ entry.summary }}</p>
                     </div>
                 </div>
                 <div class="px-6 pb-6 pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Saved on Server</span>
+                    <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Saved</span>
                     {% if entry.filename %}
                     <a href="{{ url_for('static', filename='uploads/' + entry.filename) }}" target="_blank" class="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-sm font-bold transition">
-                        <span>View File</span> <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                        <span>View Files</span> <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
                     </a>
                     {% else %}
-                    <span class="text-xs text-slate-400 font-medium">Ready</span>
+                    <span class="text-xs text-slate-400 font-medium">Metadata Only</span>
                     {% endif %}
                 </div>
             </div>
             {% endfor %}
         </div>
+        {% endif %}
     </main>
 
     <!-- Upload Modal -->
     <div id="uploadModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl border border-slate-100 relative">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl border border-slate-100 relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeUploadModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-700 text-lg">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <h3 class="text-2xl font-black text-slate-900 mb-2">Upload New Entry</h3>
-            <p class="text-xs text-slate-500 mb-6">Add past reports, photos, or monthly newsletters up to 50MB.</p>
+            <h3 class="text-2xl font-black text-slate-900 mb-2">Upload Event Entry</h3>
+            <p class="text-xs text-slate-500 mb-6">Select multiple photos or a PDF document at once (Hold Ctrl or Shift to select multiple files, max 50MB total).</p>
             
             <form action="/upload" method="POST" enctype="multipart/form-data" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Title / Event Name</label>
-                    <input type="text" name="title" required placeholder="e.g., KASE Chronicle - April 2026" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                    <input type="text" name="title" required placeholder="e.g., KASE Chronicle - May 2025" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -127,23 +145,23 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Date / Month</label>
-                        <input type="text" name="date" required placeholder="e.g., April 2026" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                        <input type="text" name="date" required placeholder="e.g., May 2025" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Summary / Highlights</label>
-                    <textarea name="summary" rows="3" required placeholder="Short summary for review..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"></textarea>
+                    <textarea name="summary" rows="3" required placeholder="Short summary for management review..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"></textarea>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Upload File (Max 50MB)</label>
-                    <input type="file" name="file" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Select Multiple Files / Photos (Max 50MB)</label>
+                    <input type="file" name="files" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" required class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
                 </div>
 
                 <div class="pt-4 flex items-center justify-end space-x-3">
                     <button type="button" onclick="closeUploadModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl">Cancel</button>
-                    <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md">Publish to Server</button>
+                    <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md">Publish Batch</button>
                 </div>
             </form>
         </div>
