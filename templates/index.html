@@ -31,14 +31,14 @@
     <section class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white py-14 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
         <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
             <div class="md:col-span-2">
-                <span class="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Centralized Memory & Storage Hub</span>
+                <span class="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Permanent Cloud Storage Hub</span>
                 <h2 class="text-3xl sm:text-4xl font-black tracking-tight mt-3 leading-tight">KASE Chronicle & <span class="text-indigo-400">Activity Portal</span></h2>
-                <p class="text-slate-300 mt-3 text-sm sm:text-base leading-relaxed">Secure digital archive supporting multi-photo batch uploads, automated PDF covers, and reports up to 50MB.</p>
+                <p class="text-slate-300 mt-3 text-sm sm:text-base leading-relaxed">Secure digital archive synced directly with your official Google Drive vault.</p>
             </div>
             <div class="bg-slate-800/80 backdrop-blur-md p-6 rounded-2xl border border-slate-700 shadow-xl flex flex-col justify-center">
-                <span class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Storage Capacity</span>
-                <p class="text-2xl font-black text-white">50 MB <span class="text-sm font-normal text-slate-400">max per batch</span></p>
-                <p class="text-xs text-emerald-400 mt-2 flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Smart Multi-File Upload Active</p>
+                <span class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Storage Status</span>
+                <p class="text-2xl font-black text-white">Google Drive <span class="text-sm font-normal text-slate-400">Connected</span></p>
+                <p class="text-xs text-emerald-400 mt-2 flex items-center gap-1.5"><i class="fa-solid fa-shield-halved"></i> Permanent & Encrypted</p>
             </div>
         </div>
     </section>
@@ -70,26 +70,20 @@
                 <i class="fa-solid fa-folder-open"></i>
             </div>
             <h3 class="text-xl font-bold text-slate-800">No entries added yet</h3>
-            <p class="text-slate-500 text-sm mt-1 max-w-md mx-auto">Your archive is clean. Click the upload button above to start adding your past editions and event reports manually.</p>
+            <p class="text-slate-500 text-sm mt-1 max-w-md mx-auto">Your archive is ready. Click the upload button above to start populating your Google Drive vault.</p>
         </div>
         {% else %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for entry in entries %}
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-xl transition duration-300 group">
                 <div>
-                    <!-- Smart Cover Display with Photo Counter -->
-                    <div class="h-48 bg-slate-100 border-b border-slate-100 relative overflow-hidden flex items-center justify-center">
-                        {% if entry.cover_filename %}
-                        <img src="{{ url_for('static', filename='uploads/' + entry.cover_filename) }}" alt="Cover" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                        {% else %}
-                        <div class="absolute inset-0 bg-gradient-to-tr from-slate-900 to-indigo-950 flex flex-col items-center justify-center text-slate-400 p-4">
-                            <i class="fa-regular fa-image text-3xl text-indigo-400 mb-2"></i>
-                            <span class="text-xs text-slate-300 font-medium">Record Archive</span>
-                        </div>
-                        {% endif %}
+                    <!-- Cloud Storage Preview Card -->
+                    <div class="h-48 bg-gradient-to-tr from-slate-900 to-indigo-950 border-b border-slate-100 relative overflow-hidden flex flex-col items-center justify-center text-center p-6">
+                        <i class="fa-brands fa-google-drive text-4xl text-indigo-400 mb-2 group-hover:scale-110 transition duration-300"></i>
+                        <span class="text-xs text-slate-300 font-semibold tracking-wider uppercase">Google Drive Vault Record</span>
                         <div class="absolute top-3 right-3 flex gap-2">
                             {% if entry.gallery|length > 1 %}
-                            <span class="text-xs font-bold bg-slate-900/80 text-white px-2.5 py-1 rounded-full backdrop-blur-md shadow-md"><i class="fa-regular fa-images mr-1"></i> {{ entry.gallery|length }} Photos</span>
+                            <span class="text-xs font-bold bg-slate-900/80 text-white px-2.5 py-1 rounded-full backdrop-blur-md shadow-md"><i class="fa-regular fa-images mr-1"></i> {{ entry.gallery|length }} Files</span>
                             {% endif %}
                             <span class="text-xs font-black uppercase tracking-wider {{ entry.badge }} px-3 py-1 rounded-full shadow-md">{{ entry.category }}</span>
                         </div>
@@ -104,10 +98,10 @@
                     </div>
                 </div>
                 <div class="px-6 pb-6 pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Saved</span>
-                    {% if entry.filename %}
-                    <a href="{{ url_for('static', filename='uploads/' + entry.filename) }}" target="_blank" class="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-sm font-bold transition">
-                        <span>View Files</span> <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                    <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1.5"><i class="fa-solid fa-cloud-arrow-up"></i> Saved to Drive</span>
+                    {% if entry.file_id %}
+                    <a href="https://drive.google.com/file/d/{{ entry.file_id }}/view" target="_blank" class="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-sm font-bold transition">
+                        <span>View in Drive</span> <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
                     </a>
                     {% else %}
                     <span class="text-xs text-slate-400 font-medium">Metadata Only</span>
@@ -125,13 +119,13 @@
             <button onclick="closeUploadModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-700 text-lg">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <h3 class="text-2xl font-black text-slate-900 mb-2">Upload Event Entry</h3>
-            <p class="text-xs text-slate-500 mb-6">Select multiple photos or a PDF document at once (Hold Ctrl or Shift to select multiple files, max 50MB total).</p>
+            <h3 class="text-2xl font-black text-slate-900 mb-2">Upload to Google Drive</h3>
+            <p class="text-xs text-slate-500 mb-6">Select multiple photos or a PDF document at once (Max 50MB total batch upload).</p>
             
             <form action="/upload" method="POST" enctype="multipart/form-data" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Title / Event Name</label>
-                    <input type="text" name="title" required placeholder="e.g., KASE Chronicle - May 2025" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                    <input type="text" name="title" required placeholder="e.g., KASE Chronicle Edition" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -151,17 +145,17 @@
 
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Summary / Highlights</label>
-                    <textarea name="summary" rows="3" required placeholder="Short summary for management review..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"></textarea>
+                    <textarea name="summary" rows="3" required placeholder="Short summary for records..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"></textarea>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Select Multiple Files / Photos (Max 50MB)</label>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Select Files / Photos (Max 50MB)</label>
                     <input type="file" name="files" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" required class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
                 </div>
 
                 <div class="pt-4 flex items-center justify-end space-x-3">
                     <button type="button" onclick="closeUploadModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl">Cancel</button>
-                    <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md">Publish Batch</button>
+                    <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md">Upload to Drive</button>
                 </div>
             </form>
         </div>
