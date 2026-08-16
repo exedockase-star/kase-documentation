@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 from flask import Flask, render_template, request, redirect, url_for
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
@@ -13,23 +14,12 @@ FOLDER_ID = '1IYKRqFhhhArogNeuRe3H-bUT3TQhGk7a'
 SCOPES = ['https://www.googleapis.com/auth/drive']
 SERVICE_ACCOUNT_FILE = 'credentials.json'
 
-# Safely build credentials file and fix escaped newlines from Render environment variables
-google_creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
-if google_creds_json:
-    try:
-        # Try loading directly
-        creds_dict = json.loads(google_creds_json)
-    except json.JSONDecodeError:
-        # If Render escaped the newlines, fix them back
-        fixed_json = google_creds_json.replace('\\\\n', '\\n')
-        creds_dict = json.loads(fixed_json)
-    
-    # Ensure the private key has real newlines
-    if 'private_key' in creds_dict:
-        creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n')
-
-    with open(SERVICE_ACCOUNT_FILE, 'w') as f:
-        json.dump(creds_dict, f)
+# Decode Base64 credentials from Render Environment Variable securely
+encoded_creds = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+if encoded_creds:
+    decoded_bytes = base64.b64decode(encoded_creds.encode('utf-8'))
+    with open(SERVICE_ACCOUNT_FILE, 'wb') as f:
+        f.write(decoded_bytes)
 
 creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 drive_service = build('drive', 'v3', credentials=creds)
