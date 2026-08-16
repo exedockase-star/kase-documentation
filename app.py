@@ -9,8 +9,7 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
-# PASTE YOUR GOOGLE DRIVE FOLDER ID HERE
-FOLDER_ID = 'PASTE_YOUR_FOLDER_ID_HERE' 
+FOLDER_ID = '1IYKRqFhhhArogNeuRe3H-bUT3TQhGk7a' 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 SERVICE_ACCOUNT_FILE = 'credentials.json'
 
@@ -29,7 +28,17 @@ entries = []
 
 @app.route('/')
 def index():
-    return render_template('index.html', entries=entries)
+    category_filter = request.args.get('category', 'all')
+    search_query = request.args.get('search', '').lower()
+    
+    filtered_entries = entries
+    if category_filter != 'all':
+        filtered_entries = [e for e in filtered_entries if e['category'] == category_filter]
+        
+    if search_query:
+        filtered_entries = [e for e in filtered_entries if search_query in e['title'].lower() or search_query in e['summary'].lower()]
+        
+    return render_template('index.html', entries=filtered_entries, current_category=category_filter)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -47,24 +56,34 @@ def upload_file():
             safe_name = secure_filename(file.filename)
             file.save(safe_name)
             
-            # Upload to Google Drive
+            # Upload directly to Google Drive
             file_metadata = {'name': safe_name, 'parents': [FOLDER_ID]}
             media = MediaFileUpload(safe_name, resumable=True)
             drive_file = drive_service.files().create(body=file_metadata, media_body=media).execute()
             
             drive_id = drive_file.get('id')
-            if not file_id: file_id = drive_id
+            if not file_id: 
+                file_id = drive_id
             gallery.append(drive_id)
             
-            os.remove(safe_name)
+            # Cleanup local temp storage
+            if os.path.exists(safe_name):
+                os.remove(safe_name)
 
     badge = "bg-indigo-50 text-indigo-700"
-    if category == "Event Report": badge = "bg-emerald-50 text-emerald-700"
-    elif category == "Field Activity": badge = "bg-amber-50 text-amber-700"
+    if category == "Event Report": 
+        badge = "bg-emerald-50 text-emerald-700"
+    elif category == "Field Activity": 
+        badge = "bg-amber-50 text-amber-700"
 
     entries.insert(0, {
-        'title': title, 'category': category, 'date': date,
-        'summary': summary, 'file_id': file_id, 'gallery': gallery, 'badge': badge
+        'title': title, 
+        'category': category, 
+        'date': date,
+        'summary': summary, 
+        'file_id': file_id, 
+        'gallery': gallery, 
+        'badge': badge
     })
     
     return redirect(url_for('index'))
